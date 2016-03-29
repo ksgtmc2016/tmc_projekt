@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html ng-app="app">
+  <head>
+    <title>Rower3m przez 3m</title>
+  </head>
+  <body>
+    <div ng-controller="ctrl">
+      <form>
+        <h3>Start:</h3>
+        <input type="number" ng-model="ctrl.startLat" required>Latitude</input>
+        <input type="number" ng-model="ctrl.startLong" required>Longitude</input><br/>
+        <h3>End:</h3>
+        <input type="number" ng-model="ctrl.stopLat" required>Latitude</input>
+        <input type="number" ng-model="ctrl.stopLong" required>Longitude</input><br/><br/>
+      </form>
+
+      <div>
+        <button ng-click="ctrl.search()">Szukaj</button>
+      </div>
+
+      <ul>
+        <li ng-repeat="location in route3d">
+          {{location.lat + ' ' + location.long + ' ' + location.alt}}
+        </li>
+      </ul>
+
+    </div>
+
+    <script
+      src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script
+      src="js/controller.js"></script>
+    <script
+      src="js/service.js"></script>
+  </body>
+</html>
