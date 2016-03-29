@@ -1,5 +1,5 @@
-angular.module('service', [])
-.factory('serv', function(){
+angular.module('altitudeService', ['pathService'])
+.factory('altServ', ['pathServ', function(pathServ){
   console.log("Service launched!");
 
   // var db = openDatabase('geodb', '1.0', 'Test DB', 2 * 1024 * 1024);
@@ -29,7 +29,6 @@ angular.module('service', [])
   //     }
   //   });
   // });
-
 
   const coords = [
     {x: 463300, y: 732000, z: 173.23},
@@ -66,9 +65,6 @@ db.transaction(function (tx) {
 //       }
 //    }, null);
 // });
-
-
-  var route2d = [];
 
   function wsg84ToPuw92(lat, long){
     console.log('wsg84ToPuw92');
@@ -133,7 +129,7 @@ db.transaction(function (tx) {
   var get3dRoute = function(){
     console.log('get3dRoute');
     var route3d = [];
-    angular.forEach(route2d, function(position){
+    angular.forEach(pathServ.get2dRoute(), function(position){
       var alt = findAltitude(position.lat, position.long);
       route3d.push({lat: position.lat, long: position.long, alt: alt});
       //console.log('Pushing lat:' + position.lat +  ", long: " + position.long + ", alt:" + alt);
@@ -141,17 +137,7 @@ db.transaction(function (tx) {
     return route3d;
   }
 
-  var update2dRoute = function(startLat, startLong, endLat, endLong){
-    console.log('update2dRoute');
-      //TODO Implement route search algorithm
-      route2d = [];
-      route2d.push({lat: startLat, long: startLong});
-      route2d.push({lat: endLat, long: endLong});
-  }
-
-
   return {
-    get3dRoute: get3dRoute,
-    update2dRoute: update2dRoute
+    get3dRoute: get3dRoute
   }
-});
+}]);

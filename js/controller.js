@@ -1,5 +1,5 @@
-angular.module('app', ['service'])
-.controller('ctrl', ['serv', '$scope', function(serv, $scope) {
+angular.module('app', ['altitudeService', 'pathService'])
+.controller('ctrl', ['altServ', 'pathServ', '$scope', function(altServ, pathServ, $scope) {
   $scope.startLat = 0.0;
   $scope.startLong = 0.0;
   $scope.stopLat = 0.0;
@@ -9,7 +9,7 @@ angular.module('app', ['service'])
 
   $scope.search = function(){
     console.log("Search started");
-    serv.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong);
-    $scope.route3d = serv.get3dRoute();
+    pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong);
+    $scope.route3d = altServ.get3dRoute();
   }
 }]);
