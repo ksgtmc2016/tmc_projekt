@@ -7,15 +7,15 @@
     <div ng-controller="ctrl">
       <form>
         <h3>Start:</h3>
-        <input type="number" ng-model="ctrl.startLat" required>Latitude</input>
-        <input type="number" ng-model="ctrl.startLong" required>Longitude</input><br/>
+        <input type="number" ng-model="startLat" required>Latitude</input>
+        <input type="number" ng-model="startLong" required>Longitude</input><br/>
         <h3>End:</h3>
-        <input type="number" ng-model="ctrl.stopLat" required>Latitude</input>
-        <input type="number" ng-model="ctrl.stopLong" required>Longitude</input><br/><br/>
+        <input type="number" ng-model="stopLat" required>Latitude</input>
+        <input type="number" ng-model="stopLong" required>Longitude</input><br/><br/>
       </form>
 
       <div>
-        <button ng-click="ctrl.search()">Szukaj</button>
+        <button ng-click="search()">Szukaj</button>
       </div>
 
       <ul>

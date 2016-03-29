@@ -71,10 +71,13 @@ db.transaction(function (tx) {
   var route2d = [];
 
   function wsg84ToPuw92(lat, long){
+    console.log('wsg84ToPuw92');
     //TODO conversion implementation
+    var puw92x = 463600;
+    var puw92y = 732000;
     return {
       x: puw92x,
-      y: puw93y
+      y: puw92y
     }
   }
 
@@ -85,52 +88,65 @@ db.transaction(function (tx) {
   }
 
   function findClosestPointAltitude(x, y){
+    console.log('findClosestPointAltitude');
     //var area = findClosestArea(x, y)
-    var closestPointAlt;
+    var closestPointAlt, minDistance = 9999999;
     //TODO Database query
-    db.transaction(function (tx){
-      tx.executeSql('SELECT * FROM COORDS', [], function(tx, results){
-        var len = results.rows.length, i, minDistance = 99999999999;
-        for (i = 0; i < len; i++){
-          var row = results.rows.item(i);
-          if (calculateDistance(x, row.x, y, row.y) < minDistance){
-            minDistance = calculateDistance(x, row.x, y, row.y);
-            closestPointAlt = row.z;
-          }
-        }
-      });
+    // db.transaction(function (tx){
+    //   tx.executeSql('SELECT * FROM COORDS', [], function(tx, results){
+    //     var len = results.rows.length, i, minDistance = 99999999999;
+    //     for (i = 0; i < len; i++){
+    //       var row = results.rows.item(i);
+    //       if (calculateDistance(x, row.x, y, row.y) < minDistance){
+    //         minDistance = calculateDistance(x, row.x, y, row.y);
+    //         closestPointAlt = row.z;
+    //       }
+    //     }
+    //     //console.log('Closest point altitude: ' + closestPointAlt);
+    //   });
+    // });
+
+    angular.forEach(coords, function(position){
+      if (calculateDistance(x, position.x, y, position.y) < minDistance){
+        minDistance = calculateDistance(x, position.x, y, position.y) < minDistance;
+        closestPointAlt = position.z;
+      }
     });
     return closestPointAlt;
   }
 
   function calculateDistance (x1, x2, y1, y2){
-    return (x1 - x2)(x1 - x2) + (y1 - y2)(y1 - y2);
+    console.log("calculateDistance");
+    return (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2);
   }
 
   function findAltitude(lat,long){
+    console.log('findAltitude');
     var formattedCoords = wsg84ToPuw92(lat, long);
     x = formattedCoords.x;
     y = formattedCoords.y;
+    z = findClosestPointAltitude(x, y);
 
-    return findClosestPointAltitude(x, y);
+    return z;
   }
 
   var get3dRoute = function(){
+    console.log('get3dRoute');
     var route3d = [];
     angular.forEach(route2d, function(position){
       var alt = findAltitude(position.lat, position.long);
-      route3d.push({lat: position.lat, long: position.long, alt: alt})
-    })
-    console.log('3D route: ' + route3d);
+      route3d.push({lat: position.lat, long: position.long, alt: alt});
+      //console.log('Pushing lat:' + position.lat +  ", long: " + position.long + ", alt:" + alt);
+    });
     return route3d;
   }
 
   var update2dRoute = function(startLat, startLong, endLat, endLong){
+    console.log('update2dRoute');
       //TODO Implement route search algorithm
       route2d = [];
       route2d.push({lat: startLat, long: startLong});
       route2d.push({lat: endLat, long: endLong});
-      console.log('2D route: ' + route2d);
   }
 
 
