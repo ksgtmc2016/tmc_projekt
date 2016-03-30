@@ -1,69 +1,27 @@
 angular.module('altitudeService', ['pathService'])
 .factory('altServ', ['pathServ', function(pathServ){
 
-  // var db = openDatabase('geodb', '1.0', 'Test DB', 2 * 1024 * 1024);
-  // db.transaction(function(tx){
-  //   tx.executeSql('CREATE TABLE IF NOT EXIST coords(_id INTEGER PRIMARY KEY AUTOINCREMENT, x INTEGER NOT NULL, y INTEGER NOT NULL, z const NOT NULL)');
-  // });
-  //
-  // const coords = [
-  //   {x: 463300, y: 732000, z: 173.23},
-  //   {x: 463400, y: 732000, z: 173.39},
-  //   {x: 463500, y: 732000, z: 176.22},
-  //   {x: 463600, y: 732000, z: 181.76}
-  // ];
-  //
-  // for (var i in coords){
-  //   db.transaction(function(tx){
-  //     tx.executeSql('INSERT INTO coords (_id, x, y, z) VALUES (?, ?, ?)', [coords[i].x, coords[i].y, coords[i].z]);
-  //     console.log('Data inserted');
-  //   });
-  // }
-  //
-  // db.transaction(function(tx){
-  //   console.log('Trying to read data...');
-  //   tx.executeSql('SELECT * FROM coords', [], function(tx, results){
-  //     for (var i = 0; i < 4; i++){
-  //       console.log(results.rows.item[i]);
-  //     }
-  //   });
-  // });
 
-  const coords = [
-    {x: 732000, y: 463300, z: 173.23},
-    {x: 732000, y: 463400, z: 173.39},
-    {x: 732000, y: 463500, z: 176.22},
-    {x: 732000, y: 463600, z: 181.76}
-  ];
+  var coords = [];
 
-var db = openDatabase('geodb', '1.0', 'Test DB', 2 * 1024 * 1024);
-var msg;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'http://cx453.net/tmc/data/gdansk_puwg92.db', true);
+  xhr.responseType = 'arraybuffer';
 
-db.transaction(function (tx) {
-   tx.executeSql('CREATE TABLE IF NOT EXISTS COORDS (id unique, x, y, z)');
+  xhr.onload = function(e) {
+    var uInt8Array = new Uint8Array(this.response);
+    var db = new SQL.Database(uInt8Array);
+    var contents = db.exec("SELECT * FROM coords");
+    var dbValues = contents[0].values;
+    console.log(dbValues);
+    for (var i in dbValues){
+      var singleDbValue = dbValues[i];
+      coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
+    }
+  console.log('DB is ready with ' + coords.length + ' elements.');
 
-   for (var i in coords){
-     tx.executeSql('INSERT INTO COORDS (id, x, y, z) VALUES (?, ?, ?, ?)', [i + 1, coords[i].x, coords[i].y, coords[i].z]);
-     msg = 'Math.log message created and row inserted.';
-     console.log(msg);
-   }
-   //document.querySelector('#status').innerHTML =  msg;
-});
-//
-// db.transaction(function (tx) {
-//    tx.executeSql('SELECT z FROM COORDS', [], function (tx, results) {
-//       var len = results.rows.length, i;
-//       msg = "Found rows: " + len;
-//       console.log(msg);
-//       //document.querySelector('#status').innerHTML +=  msg;
-//
-//       for (i = 0; i < len; i++){
-//          msg = results.rows.item(i);
-//          console.log(msg);
-//          //document.querySelector('#status').innerHTML +=  msg;
-//       }
-//    }, null);
-// });
+  };
+  xhr.send();
 
   function wsg84ToPuw92(lat, long){
     var puw92x, puw92y;
@@ -128,8 +86,6 @@ db.transaction(function (tx) {
     puw92x=Math.round(m0*Xgk+x0);
     puw92y=Math.round(m0*Ygk+y0);
 
-    console.log(lat + " " + long + " -> " + puw92x + " " + puw92y);
-
     return {
       x: puw92x,
       y: puw92y
@@ -145,20 +101,6 @@ db.transaction(function (tx) {
   function findClosestPointAltitude(x, y){
     //var area = findClosestArea(x, y)
     var closestPointAlt, minDistance = Number.MAX_VALUE;
-    //TODO Database query
-    // db.transaction(function (tx){
-    //   tx.executeSql('SELECT * FROM COORDS', [], function(tx, results){
-    //     var len = results.rows.length, i, minDistance = 99999999999;
-    //     for (i = 0; i < len; i++){
-    //       var row = results.rows.item(i);
-    //       if (calculateDistance(x, row.x, y, row.y) < minDistance){
-    //         minDistance = calculateDistance(x, row.x, y, row.y);
-    //         closestPointAlt = row.z;
-    //       }
-    //     }
-    //     //console.log('Closest point altitude: ' + closestPointAlt);
-    //   });
-    // });
 
     for (var i in coords){
       if (calculateDistance(x, coords[i].x, y, coords[i].y) < minDistance){
@@ -175,7 +117,6 @@ db.transaction(function (tx) {
 
   function calculateDistance (x1, x2, y1, y2){
     var distance = (x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2);
-    console.log("(" + x1 + " - " + x2 + ")^2 + (" + y1 + " - " + y2 + ")^2 = " + distance);
     return distance;
   }
 
