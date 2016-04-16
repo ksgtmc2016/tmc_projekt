@@ -1,42 +1,53 @@
 <!DOCTYPE html>
-<html ng-app="app">
+<html lang="pl-PL" ng-app="app">
   <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Rower3m przez 3m</title>
+
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+    <style>
+
+    search-box {
+      position: absolute;
+      top: 51px;
+      left: 0px;
+      background-color:rgba(255,255,255,0.7);
+      padding: 20px;
+    }
+
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
+    <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-1.3.1.js"></script>
+
+    <script src="app.js"></script>
+    <script src="search/search-box.js"></script>
+    <script src="route/route-service.js"></script>
+    <script src="altitude/altitude-service.js"></script>
+    <script src="altitude/complex.js"></script>
+    <script src="sqlite/sql-memory-growth.js"></script>
   </head>
-  <body>
+  <body style="background: url(temp_bg.png) no-repeat center fixed;">
     <div ng-controller="ctrl">
-      <form>
-        <h3>Start:</h3>
-        <input type="number" ng-model="startLat" required>Latitude</input>
-        <input type="number" ng-model="startLong" required>Longitude</input><br/>
-        <h3>End:</h3>
-        <input type="number" ng-model="stopLat" required>Latitude</input>
-        <input type="number" ng-model="stopLong" required>Longitude</input><br/><br/>
-      </form>
 
-      <div>
-        <button ng-click="search()">Szukaj</button>
+      <nav class="navbar navbar-inverse navbar-static-top">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle" ng-click="searchCollapsed = !searchCollapsed">
+              <span class="glyphicon glyphicon-menu-hamburger"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">Rower3m przez 3m!</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="container-fluid">
+        <search-box xs-collapse ng-hide="searchCollapsed"></search-box>
       </div>
-
-      <ul>
-        <li ng-repeat="location in route3d">
-          {{location.lat + ' ' + location.long + ' ' + location.alt}}
-        </li>
-      </ul>
-
+      
     </div>
-
-    <script
-      src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
-    <script
-      src="js/controller.js"></script>
-    <script
-      src="js/altitude-service.js"></script>
-    <script
-      src="js/path-service.js"></script>
-    <script
-      src="js/complex.js"></script>
-    <script
-      src="js/sql-memory-growth.js"></script>
   </body>
 </html>

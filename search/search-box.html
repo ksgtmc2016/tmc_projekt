@@ -1,0 +1,32 @@
+<form class="form-horizontal" role="form" ng-submit="ctrl.search()">
+  <div class="form-group" style="margin-bottom: 0px;">
+    <div class="col-xs-12">
+      <input type="text" class="form-control input-sm" ng-model="ctrl.from" placeholder="Początek trasy..."></input>
+      <span class="col-xs-offset-5 glyphicon glyphicon-sort" ng-click="ctrl.reverseDirection()"</span>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-xs-12">
+      <input type="text" class="form-control input-sm" ng-model="ctrl.to" placeholder="Koniec trasy..."></input>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-xs-12 checkbox">
+      <label><input type="checkbox" ng-model="ctrl.searchData.noDirtRoads"> Unikaj dróg gruntowych</input></label>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-xs-12">
+      <select class="form-control input-sm" ng-model="ctrl.searchData.level">
+        <option value="easy">Trasa łatwa</option>
+        <option value="medium">Trasa średnia</option>
+        <option value="hard">Trasa trudna</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-xs-12">
+      <button type="submit" class="btn btn-default">Wyznacz</button>
+    </div>
+  </div>
+</form>

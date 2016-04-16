@@ -1,27 +1,27 @@
-angular.module('altitudeService', ['pathService'])
-.factory('altServ', ['pathServ', function(pathServ){
+angular.module('altitude', [])
+.factory('altitudeService', [function(){
 
 
   var coords = [];
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'http://cx453.net/tmc/data/gdansk_puwg92.db', true);
-  xhr.responseType = 'arraybuffer';
-
-  xhr.onload = function(e) {
-    var uInt8Array = new Uint8Array(this.response);
-    var db = new SQL.Database(uInt8Array);
-    var contents = db.exec("SELECT * FROM coords");
-    var dbValues = contents[0].values;
-    console.log(dbValues);
-    for (var i in dbValues){
-      var singleDbValue = dbValues[i];
-      coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
-    }
-  console.log('DB is ready with ' + coords.length + ' elements.');
-
-  };
-  xhr.send();
+  // var xhr = new XMLHttpRequest();
+  // xhr.open('GET', 'data/gdansk_puwg92.db', true);
+  // xhr.responseType = 'arraybuffer';
+  //
+  // xhr.onload = function(e) {
+  //   var uInt8Array = new Uint8Array(this.response);
+  //   var db = new SQL.Database(uInt8Array);
+  //   var contents = db.exec("SELECT * FROM coords");
+  //   var dbValues = contents[0].values;
+  //   console.log(dbValues);
+  //   for (var i in dbValues){
+  //     var singleDbValue = dbValues[i];
+  //     coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
+  //   }
+  // console.log('DB is ready with ' + coords.length + ' elements.');
+  //
+  // };
+  // xhr.send();
 
   function wsg84ToPuw92(lat, long){
     var puw92x, puw92y;
@@ -131,10 +131,11 @@ angular.module('altitudeService', ['pathService'])
 
   var get3dRoute = function(){
     var route3d = [];
-    angular.forEach(pathServ.get2dRoute(), function(position){
-      var alt = findAltitude(position.lat, position.long);
-      route3d.push({lat: position.lat, long: position.long, alt: alt});
-    });
+    //TODO replace pathServ dependency with inner route2d object
+    // angular.forEach(pathServ.get2dRoute(), function(position){
+    //   var alt = findAltitude(position.lat, position.long);
+    //   route3d.push({lat: position.lat, long: position.long, alt: alt});
+    // });
     return route3d;
   }
 
