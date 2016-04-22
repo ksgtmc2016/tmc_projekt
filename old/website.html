@@ -1,0 +1,101 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<link href="jquery-ui.css" rel="stylesheet">
+<style>
+
+</style>
+</head>
+<body>
+   <form action="action_page.php">
+      <fieldset>
+         <legend>Start</legend>
+         Longitude:<br>
+         <input type="text" id="slat" name="slat" value="54.3700889"><br>
+         Latitude:<br>
+         <input type="text" id="slon" name="slon" value="18.6104692"><br><br>
+      </fieldset>
+      <fieldset>
+         <legend>End</legend>
+         Longitude:<br>
+         <input type="text" id="elat" name="elat" value="54.3830719"><br>
+         Latitude:<br>
+         <input type="text" id="elon" name="elon" value="18.6150674"><br><br>
+      </fieldset>
+      <fieldset>
+         <legend>Submit</legend>
+         <input type="submit" id="find" value="Submit">
+      </fieldset>
+      <fieldset>
+         <legend>Result</legend>
+         <textarea id="resultdescr" rows="4" cols="50">
+Description will be shown here
+         </textarea>
+         <textarea id="resultpoints" rows="4" cols="50">
+Coordination points will be shown here
+         </textarea>
+      </fieldset>
+      
+   </form>
+   <br />
+   <script src="jquery-2.1.4.min.js"></script>
+   <script src="jquery-ui.min.js"></script>
+   <script>
+      $( "form" ).submit(function( event ) {
+         var startLatitude = $('#slat').val();
+         var startLongitude = $('#slon').val();
+         var endLatitude = $('#elat').val();
+         var endLongitude = $('#elon').val();
+         
+         var url = "http://cx453.net/testing/api.php?a=" + startLatitude + "&b=" + startLongitude + "&c=" + endLatitude + "&d=" + endLongitude + "&e=1&f=1";
+        
+         $.get( url, function(data) {
+            
+            var result = JSON.parse(data);
+/****************************************************************************************
+ * result                                                                               *
+ *   |--- type - Dunno                                                                  *
+ *   |--- properties                                                                    *
+ *   |       |--- description - Route description                                       *
+ *   |       |--- distance    - Travel distance in kilometers                           *
+ *   |       |--- traveltime  - Travel time in I have no idea                           *
+ *   |--- crs         - dunno fuck it                                                   *
+ *   |--- coordinates - array of coords - contains two item arrays of coords [lat, lon] *
+ ****************************************************************************************/
+ 
+            $("#resultdescr").text(result.properties.description.replace(new RegExp("<br>", 'g'), "\n"));
+            
+            var outcoords = "#     | Latitude    | Longitude\n";
+            
+            for(var i = 0; i < result.coordinates.length; i++)
+            {
+               var test = "" + i;
+               var spacestxt = "";
+               
+               for (var spaces = test.lenght; spaces < 5; spaces++)
+               {
+                  spacestxt += " ";
+               }
+               
+               outcoords += test + spacestxt + " | " + result.coordinates[i][0] + "   | " + result.coordinates[i][1] + "\n";
+            }
+            
+            $("#resultpoints").html(outcoords);
+            
+            //alert( "success" );
+         })
+         .done(function() {
+            //alert( "second success" );
+         })
+         .fail(function() {
+            //alert( "error" );
+         })
+         .always(function() {
+            //alert( "finished" );
+         });
+        
+        event.preventDefault();
+      });
+   </script>
+</body>
+</html>

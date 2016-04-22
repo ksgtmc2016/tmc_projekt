@@ -20,8 +20,10 @@
 
     </style>
 
+    <script src="http://openlayers.org/en/v3.14.2/build/ol.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.min.js"></script>
     <script src="https://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-1.3.1.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.3.js"></script>
 
     <script src="app.js"></script>
     <script src="search/search-box.js"></script>
@@ -30,7 +32,7 @@
     <script src="altitude/complex.js"></script>
     <script src="sqlite/sql-memory-growth.js"></script>
   </head>
-  <body style="background: url(temp_bg.png) no-repeat center fixed;">
+  <body>
     <div ng-controller="ctrl">
 
       <nav class="navbar navbar-inverse navbar-static-top">
@@ -39,15 +41,172 @@
             <button type="button" class="navbar-toggle" ng-click="searchCollapsed = !searchCollapsed">
               <span class="glyphicon glyphicon-menu-hamburger"></span>
             </button>
-            <a href="index.html"><img src="img/logo.png" alt="Rower3m przez 3m"></img></a>
+            <a class="navbar-brand" href="index.html">Rower3m przez 3m!</a>
           </div>
         </div>
       </nav>
 
       <div class="container-fluid">
-        <search-box xs-collapse ng-hide="searchCollapsed"></search-box>
+        <search-box xs-collapse ng-hide="searchCollapsed" style="z-index: 1"></search-box>
+        <div>
+          <div id="map" class="map" tabindex="0"></div>
+        </div>
       </div>
-
+      
     </div>
+    
+    <script>
+      var styles = {
+        'route': new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            width: 6, color: [237, 212, 0, 0.8]
+          })
+        }),
+        'icon': new ol.style.Style({
+          image: new ol.style.Icon({
+            anchor: [0.5, 1],
+            src: 'data/icon.png'
+          })
+        }),
+        'geoMarker': new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: 7,
+            snapToPixel: false,
+            fill: new ol.style.Fill({color: 'black'}),
+            stroke: new ol.style.Stroke({
+              color: 'white', width: 2
+            })
+          })
+        })
+      };
+      
+      var vectorSource = new ol.source.Vector({
+         features: []
+      });
+      
+      var vectorLayer = new ol.layer.Vector({
+         source: vectorSource,
+         style: function(feature) {
+            return styles[feature.get('type')];
+         }
+      });
+    
+      var map = new ol.Map({
+        units: "m",
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          }),
+          vectorLayer
+        ],
+        target: 'map',
+        controls: ol.control.defaults({
+          attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+            collapsible: false
+          })
+        }),
+        view: new ol.View({
+          center: ol.proj.transform([18.6174352, 54.4366541], 'EPSG:4326', 'EPSG:3857'),
+          zoom: 12
+        })
+      });
+
+      var markersCount = 0;
+      var startCoords;
+      var endCoords;
+      
+      map.on("click", function(e) {
+         var featureExistsAtPixel = false;
+         map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+            featureExistsAtPixel = true;
+            vectorSource.removeFeature( feature );
+         });
+         
+         if(!featureExistsAtPixel){
+            var geoMarker = new ol.Feature({
+               type: 'geoMarker',
+               //geometry: new ol.geom.Point(ol.proj.transform([18.6174352, 54.4366541], 'EPSG:4326', 'EPSG:3857'))
+               geometry: new ol.geom.Point(e.coordinate)
+            });
+
+            vectorSource.addFeature( geoMarker );
+            
+            if(markersCount == 0)
+            {
+               startCoords = ol.proj.transform(e.coordinate, 'EPSG:3857', 'EPSG:4326');
+            }
+            else if(markersCount == 1)
+            {
+               endCoords = ol.proj.transform(e.coordinate, 'EPSG:3857', 'EPSG:4326');
+            }
+            
+            markersCount++;
+         }
+         
+         if(markersCount == 2)
+         {
+            var url = "http://cx453.net/tmc/api.php?a=" + startCoords[1] + "&b=" + startCoords[0] + "&c=" + endCoords[1] + "&d=" + endCoords[0] + "&e=1&f=1";
+
+            $.get( url, function( data ) {
+               /****************************************************************************************
+               *  data                                                                                *
+               *   |--- type        - Dunno                                                           *
+               *   |--- properties                                                                    *
+               *   |       |--- description - Route description                                       *
+               *   |       |--- distance    - Travel distance in kilometers                           *
+               *   |       |--- traveltime  - Travel time in I have no idea                           *
+               *   |--- crs         - dunno                                                           *
+               *   |--- coordinates - array of coords - contains two item arrays of coords [lat, lon] *
+               ****************************************************************************************/
+
+               var result = JSON.parse(data);
+               if(result.properties.traveltime != -1){
+                  /*for(var i = 0; i < result.coordinates.length; i++) {
+                     /*var routeMarker = new ol.Feature({
+                        type: 'geoMarker',
+                        geometry: new ol.geom.Point(ol.proj.transform(result.coordinates[i], 'EPSG:4326', 'EPSG:3857'))
+                        //geometry: new ol.geom.Point(e.coordinate)
+                     });
+
+                     vectorSource.addFeature( routeMarker );
+                     
+                     multipoint.appendPoint(new ol.geom.Point(ol.proj.transform(result.coordinates[i], 'EPSG:4326', 'EPSG:3857')));
+                  }*/
+                  
+                  var route = new ol.geom.LineString(result.coordinates);
+
+                  var routeFeature = new ol.Feature({
+                    type: 'route',
+                    geometry: route.transform('EPSG:4326', 'EPSG:3857')
+                  });
+                  
+                  vectorSource.addFeature( routeFeature );
+                  
+                  //alert("Found route!");
+                  //pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong, data.coordinates);
+                  //$scope.route3d = altServ.get3dRoute();
+               }
+               else {
+                  alert('Error!');
+               }
+            });
+         }
+         
+         if(markersCount == 3)
+         {
+            vectorSource.clear();
+            markersCount = 0;
+         }
+      });
+      
+      /*
+      //Dodawanie markerow
+      vectorSource.addFeature( geoMarker );
+      
+      //Usuwanie markerow
+      vectorSource.removeFeature( geoMarker ); //usun1
+      vectorSource.clear(); //Usun wszystkie
+      */
+    </script>
   </body>
 </html>
