@@ -3,25 +3,39 @@ angular.module('altitude', [])
 
 
   var coords = [];
+  var route2d = [];
+  var route3d = [];
+  var profile = [];
 
-  // var xhr = new XMLHttpRequest();
-  // xhr.open('GET', 'data/gdansk_puwg92.db', true);
-  // xhr.responseType = 'arraybuffer';
-  //
-  // xhr.onload = function(e) {
-  //   var uInt8Array = new Uint8Array(this.response);
-  //   var db = new SQL.Database(uInt8Array);
-  //   var contents = db.exec("SELECT * FROM coords");
-  //   var dbValues = contents[0].values;
-  //   console.log(dbValues);
-  //   for (var i in dbValues){
-  //     var singleDbValue = dbValues[i];
-  //     coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
-  //   }
-  // console.log('DB is ready with ' + coords.length + ' elements.');
-  //
-  // };
-  // xhr.send();
+  var observers = [];
+  var registerOnProfileReadyObserver = function(observer){
+    observers.push(observer);
+  }
+
+  function notifyObservers(){
+    angular.forEach(observers, function(observer){
+      observer();
+    })
+  }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'data/gdansk_puwg92.db', true);
+  xhr.responseType = 'arraybuffer';
+
+  xhr.onload = function(e) {
+    var uInt8Array = new Uint8Array(this.response);
+    var db = new SQL.Database(uInt8Array);
+    var contents = db.exec("SELECT * FROM coords");
+    var dbValues = contents[0].values;
+    console.log(dbValues);
+    for (var i in dbValues){
+      var singleDbValue = dbValues[i];
+      coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
+    }
+  console.log('DB is ready with ' + coords.length + ' elements.');
+
+  };
+  xhr.send();
 
   function wsg84ToPuw92(lat, long){
     var puw92x, puw92y;
@@ -129,17 +143,51 @@ angular.module('altitude', [])
     return z;
   }
 
-  var get3dRoute = function(){
-    var route3d = [];
-    //TODO replace pathServ dependency with inner route2d object
-    // angular.forEach(pathServ.get2dRoute(), function(position){
-    //   var alt = findAltitude(position.lat, position.long);
-    //   route3d.push({lat: position.lat, long: position.long, alt: alt});
-    // });
-    return route3d;
+  function formatRoute2d(route2dWsg84) {
+    route2d = [];
+    angular.forEach(route2dWsg84, function(position){
+      route2d.push(wsg84ToPuw92(position.lat, position.long));
+    })
+  }
+
+  // var calculate3dRoute = function(route2dLatLong){
+  //   route3d = [];
+  //   angular.forEach(route2dLatLong, function(position){
+  //     var alt = findAltitude(position.lat, position.long);
+  //     route3d.push({lat: position.lat, long: position.long, alt: alt});
+  //   });
+  //   createProfile();
+  //   return route3d;
+  // }
+
+  var createProfile = function(route2dWsg84){
+    profile = [];
+    formatRoute2d(route2dWsg84);
+
+    var distance = 0;
+    var altitude = findClosestPointAltitude(route2d[0].x, route2d[0].y);
+    profile.push([distance, altitude]);
+
+    for (var i = 1; i < route2d.length; i++){
+      distance += calculateDistance(route2d[i].x, route2d[i-1].x,
+                                    route2d[i].y, route2d[i-1].y);
+      var altitude = findClosestPointAltitude(route2d[i].x, route2d[i].y);
+      profile.push([distance, altitude]);
+    }
+    console.log('Got profile');
+    console.log(profile);
+    notifyObservers();
+  }
+
+  var getProfile = function(){
+    return profile;
   }
 
   return {
-    get3dRoute: get3dRoute
-  }
+    coords: coords,
+    route3d: route3d,
+    getProfile: getProfile,
+    createProfile: createProfile,
+    registerOnProfileReadyObserver: registerOnProfileReadyObserver
+  };
 }]);

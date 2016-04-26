@@ -1,4 +1,4 @@
-angular.module('app', ['ui.bootstrap', 'altitude', 'route', 'search'])
+angular.module('app', ['altitude', 'route', 'search', 'widget'])
 .controller('ctrl', ['altitudeService', 'routeService', '$scope', '$http', function(altServ, pathServ, $scope, $http) {
   $scope.startLat = 54.450673;
   $scope.startLong = 18.438442;
@@ -26,7 +26,7 @@ angular.module('app', ['ui.bootstrap', 'altitude', 'route', 'search'])
 
       if(data.properties.traveltime != -1){
          pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong, data.coordinates);
-         $scope.route3d = altServ.get3dRoute();
+         $scope.route3d = altServ.calculate3dRoute();
       }
       else {
          alert('Error!');
@@ -69,4 +69,34 @@ angular.module('app', ['ui.bootstrap', 'altitude', 'route', 'search'])
       });
     }
   }
-}]);
+}])
+.controller('ChartCtrl', function($scope){
+  $scope.chartType = 'area';
+  $scope.data = {
+    "series": [
+      "Profil"
+    ],
+    "data": [
+      {"x": "1", "y": [10]},
+      {"x": "2", "y": [14]},
+      {"x": "3", "y": [10]},
+      {"x": "4", "y": [19]}
+    ]
+  };
+  $scope.config = {
+    title: 'Profil terenu',
+    tooltips: false,
+    labels: false,
+    mouseover: function() {},
+    mouseout: function() {},
+    click: function() {},
+    legend: {
+      display: false,
+      //could be 'left, right'
+      position: 'left'
+    },
+    innerRadius: 0, // applicable on pieCharts, can be a percentage like '50%'
+    lineLegend: 'lineEnd', // can be also 'traditional'
+    waitForHeightAndWidth: true
+  }
+});

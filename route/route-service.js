@@ -6,25 +6,26 @@
 
   routeService.$inject = ['$http', 'altitudeService'];
   function routeService($http, altitudeService){
-    var route2d = [];
+    var route2d;
     var searchData = {};
 
     function update2dRoute(routeCoords){
       route2d = [];
-      route2d.push({lat: searchData.from.lat, long: searchData.from.long});
+      route2d.push({lat: searchData.from.lat, long: searchData.from.lng});
 
       for(var i = 0; i < routeCoords.length; i++){
         route2d.push({lat: routeCoords[i][1], long: routeCoords[i][0]});
       }
 
-      route2d.push({lat: searchData.to.lat, long: searchData.to.long});
-      console.log(route2d);
+      route2d.push({lat: searchData.to.lat, long: searchData.to.lng});
 
-      //altitudeService.get3dRoute();
+      console.log('Got 2d route:');
+      console.log(route2d);
+      altitudeService.createProfile(route2d);
     };
 
     var findRoute = function(){
-      var url = "http://cx453.net/tmc/api.php?a=" + searchData.from.lat + "&b=" + searchData.from.long + "&c=" + searchData.to.lat + "&d=" + searchData.to.long + "&e=1&f=1";
+      var url = "http://cx453.net/tmc/api.php?a=" + searchData.from.lat + "&b=" + searchData.from.lng + "&c=" + searchData.to.lat + "&d=" + searchData.to.lng + "&e=1&f=1";
 
       $http({method: 'GET', url: url}).success(function(data, status, headers, config) {
         /****************************************************************************************
@@ -40,7 +41,7 @@
 
         if(data.properties.traveltime != -1){
           //pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong, data.coordinates);
-          //$scope.route3d = altServ.get3dRoute();
+          //$scope.route3d = altServ.calculate3dRoute();
           update2dRoute(data.coordinates);
         }
         else {

@@ -1,11 +1,11 @@
 (function(){
   'use strict';
 
-  angular.module('search', ['ui.bootstrap', 'route'])
+  angular.module('search', ['route'])
     .directive('searchBox', searchBox);
 
-  searchBox.$inject = ['routeService'];
-  function searchBox(routeService){
+  searchBox.$inject = ['routeService', '$http'];
+  function searchBox(routeService, $http){
     return {
       restrict: 'E',
       templateUrl: 'search/search-box.html',
@@ -20,8 +20,20 @@
         ctrl.searchData.level = 'medium';
 
         ctrl.search = function(){
-          routeService.findRoute();
-          console.log(ctrl.searchData);
+          var urlFrom = 'http://maps.google.com/maps/api/geocode/json?address=' +
+                    ctrl.from + '%2CGda%C5%84sk&sensor=false';
+          var urlTo = 'http://maps.google.com/maps/api/geocode/json?address=' +
+                    ctrl.to + '%2CGda%C5%84sk&sensor=false';
+
+          $http.get(urlFrom).success(function(data){
+            ctrl.searchData.from = data.results[0].geometry.location;
+            $http.get(urlTo).success(function(data){
+              ctrl.searchData.to = data.results[0].geometry.location;
+              console.log('Searching route with data:');
+              console.log(ctrl.searchData);
+              routeService.findRoute();
+            });
+          });
         }
 
         ctrl.reverseDirection = function(){
@@ -30,32 +42,8 @@
           ctrl.from = ctrl.to;
           ctrl.to = temp;
         }
-
       },
       controllerAs: 'ctrl',
-      link: function(scope, element, attrs, ctrl){
-        scope.$watch('ctrl.from', function(newValue){
-          parseLocationInput(ctrl.searchData.from, newValue);
-        });
-
-        scope.$watch('ctrl.to', function(newValue){
-          parseLocationInput(ctrl.searchData.to, newValue);
-        });
-
-        function parseLocationInput(locationObject, unparsedLocation){
-          //TODO Add parsing from human readable values such as streets etc.
-          if (unparsedLocation === undefined){
-            return;
-          }
-
-          var locations = unparsedLocation.split(';');
-
-          if (locations.length === 2){
-            locationObject.lat = parseFloat(locations[0]);
-            locationObject.long = parseFloat(locations[1]);
-          }
-        };
       }
     }
-  }
 })()
