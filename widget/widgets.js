@@ -163,7 +163,26 @@
                   tickFormat: function(d){
                       return d3.format(',.2f')(d);
                   }
-              }
+              },
+              lines: {
+                 dispatch: {
+                     elementClick: function(e){
+                        if(heightPointMarker != null && heightPointMarker != undefined) {
+                           vectorSource.removeFeature( heightPointMarker );
+                        }
+                        
+                        heightPointMarker = new ol.Feature({
+                           type: 'pointMarker',
+                           geometry: new ol.geom.Point(ol.proj.transform([routeCoords[e[0].pointIndex][0], routeCoords[e[0].pointIndex][1]], 'EPSG:4326', 'EPSG:3857'))
+                           //geometry: new ol.geom.Point(e.coordinate)
+                        });
+                        
+                        vectorSource.addFeature( heightPointMarker );
+                        
+                        console.log(routeCoords[e[0].pointIndex][0] + " " + routeCoords[e[0].pointIndex][1]);
+                     }
+                 }
+             }
           }
         };
         scope.data = [

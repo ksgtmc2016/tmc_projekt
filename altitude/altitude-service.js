@@ -34,6 +34,8 @@ angular.module('altitude', [])
     }
   console.log('DB is ready with ' + coords.length + ' elements.');
 
+  document.getElementById("loader").remove();
+  
   };
   xhr.send();
 

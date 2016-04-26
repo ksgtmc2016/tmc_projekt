@@ -1,208 +1,174 @@
+Element.prototype.remove = function() {
+    this.parentElement.removeChild(this);
+}
+NodeList.prototype.remove = HTMLCollection.prototype.remove = function() {
+    for(var i = this.length - 1; i >= 0; i--) {
+        if(this[i] && this[i].parentElement) {
+            this[i].parentElement.removeChild(this[i]);
+        }
+    }
+}
+
+var processing = false;
+
+var styles = {
+  'route': new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      width: 6, color: [237, 212, 0, 0.8]
+    })
+  }),
+  'icon': new ol.style.Style({
+    image: new ol.style.Icon({
+      anchor: [0.5, 1],
+      src: 'data/icon.png'
+    })
+  }),
+  'geoMarker': new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 7,
+      snapToPixel: false,
+      fill: new ol.style.Fill({color: 'black'}),
+      stroke: new ol.style.Stroke({
+        color: 'white', width: 2
+      })
+    })
+  }),
+  'pointMarker': new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 7,
+      snapToPixel: false,
+      fill: new ol.style.Fill({color: 'green'}),
+      /*stroke: new ol.style.Stroke({
+        color: 'white', width: 2
+      })*/
+    })
+  })
+};
+
+var vectorSource = new ol.source.Vector({
+   features: []
+});
+
+var vectorLayer = new ol.layer.Vector({
+   source: vectorSource,
+   style: function(feature) {
+      return styles[feature.get('type')];
+   }
+});
+
 var map;
-var mercator    = new OpenLayers.Projection("EPSG:900913");
-var geographic  = new OpenLayers.Projection("EPSG:4326");
-var directionsService;
-var markers;
-var fromAddress;
-var toAddress;
-var numClicks=0;
-var VectorLayerRoutes = new OpenLayers.Layer.Vector("Routes");
 
-var line_style = {
-   strokeColor:    "#0000EE",
-   strokeOpacity:  0.7,
-   strokeWidth:    4,
-   pointRadius:    6,
-   pointerEvents:  "visiblePainted"
-};
+var markersCount = 0;
+var startCoords;
+var endCoords;
+var routeCoords;
+var heightPointMarker;
+var searchBoxCtrl;
 
-function addMarker(markerSet, position, title) {
-   /*addMarker(
-     new OpenLayers.LonLat(20, 50).transform(geographic, mercator),
-     "Jestem Markerem."
-   );//*/
-   var feature = new OpenLayers.Feature(markerSet, position);
-   feature.closeBox = true;
-   feature.popupClass = OpenLayers.Popup.FramedCloud;
-   feature.data.popupContentHTML = title;
-   feature.data.overflow = "auto";
+function mapInit() {
+   map = new ol.Map({
+      units: "m",
+      layers: [
+         new ol.layer.Tile({
+            source: new ol.source.OSM()
+         }),
+         vectorLayer
+      ],
+      target: 'map',
+      controls: ol.control.defaults({
+         attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+            collapsible: false
+         })
+      }),
+      view: new ol.View({
+         center: ol.proj.transform([18.6174352, 54.4366541], 'EPSG:4326', 'EPSG:3857'),
+         zoom: 12
+      })
+   });
 
-   var marker = feature.createMarker();
+   map.on("click", function(e) {
+      if(processing)
+         return;
 
-   var markerClick = function (evt) {
-      if (this.popup == null) {
-         his.popup = this.createPopup(this.closeBox);
-         map.addPopup(this.popup);
-         this.popup.show();
-      } else {
-         this.popup.toggle();
+      var featureExistsAtPixel = false;
+      map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+         featureExistsAtPixel = true;
+         vectorSource.removeFeature( feature );
+      });
+
+      if(!featureExistsAtPixel){
+         var geoMarker = new ol.Feature({
+            type: 'geoMarker',
+            //geometry: new ol.geom.Point(ol.proj.transform([18.6174352, 54.4366541], 'EPSG:4326', 'EPSG:3857'))
+            geometry: new ol.geom.Point(e.coordinate)
+         });
+
+         vectorSource.addFeature( geoMarker );
+
+         if(markersCount == 0)
+         {
+            startCoords = ol.proj.transform(e.coordinate, 'EPSG:3857', 'EPSG:4326');
+            searchBoxCtrl.from = startCoords[1] + "," + startCoords[0];
+         }
+         else if(markersCount == 1)
+         {
+            endCoords = ol.proj.transform(e.coordinate, 'EPSG:3857', 'EPSG:4326');
+            searchBoxCtrl.to = endCoords[1] + "," + endCoords[0];
+         }
+
+         markersCount++;
       }
-      currentPopup = this.popup;
-      OpenLayers.Event.stop(evt);
-   };
-   marker.events.register("mousedown", feature, markerClick);
 
-   markerSet.addMarker(marker);
-};
+      if(markersCount == 2)
+      {
+         searchBoxCtrl.search();
+         
+         /*
+         var url = "http://cx453.net/tmc/api.php?a=" + startCoords[1] + "&b=" + startCoords[0] + "&c=" + endCoords[1] + "&d=" + endCoords[0] + "&e=1&f=1";
 
-function init() {
-    var options = {
-        projection:         mercator,
-        displayProjection:  geographic,
-        units:              "m",
-        maxResolution:      156543.0339,
-        maxExtent: new OpenLayers.Bounds(
-            -20037508.34,
-            -20037508.34,
-            20037508.34,
-            20037508.34
-        )
-    };
-    map         = new OpenLayers.Map('map', options);
-    var osm     = new OpenLayers.Layer.OSM(); 
-    var gmap    = new OpenLayers.Layer.Google("Google", {sphericalMercator:true});
-    markers     = new OpenLayers.Layer.Markers("points");
+         processing = true;
+         
+         $.get( url, function( data ) {
+            processing = false;
 
-    map.addLayers([osm, gmap]);
+            
+            var result = JSON.parse(data);
+            if(result.properties.traveltime != -1){
+               for(var i = 0; i < result.coordinates.length; i++) {
+                  var routeMarker = new ol.Feature({
+                     type: 'geoMarker',
+                     geometry: new ol.geom.Point(ol.proj.transform(result.coordinates[i], 'EPSG:4326', 'EPSG:3857'))
+                     //geometry: new ol.geom.Point(e.coordinate)
+                  });
 
-    map.addLayer(VectorLayerRoutes);
-    map.addLayer(markers);
+                  vectorSource.addFeature( routeMarker );
 
-    directionsService = new google.maps.DirectionsService();
+                  multipoint.appendPoint(new ol.geom.Point(ol.proj.transform(result.coordinates[i], 'EPSG:4326', 'EPSG:3857')));
+               }
 
-    map.addControl(new OpenLayers.Control.LayerSwitcher());
-    map.addControl(new OpenLayers.Control.MousePosition());
+               var route = new ol.geom.LineString(result.coordinates);
 
-    map.setCenter(new OpenLayers.LonLat(10.2, 48.9).transform(
-                geographic, mercator), 5);
+               var routeFeature = new ol.Feature({
+                 type: 'route',
+                 geometry: route.transform('EPSG:4326', 'EPSG:3857')
+               });
 
-    var click = new OpenLayers.Control.Click();
-    map.addControl(click);
-    click.activate();
-}
-OpenLayers.Control.Click = OpenLayers.Class(
-    OpenLayers.Control, {                
-        defaultHandlerOptions: {
-            'single'        : true,
-            'double'        : false,
-            'pixelTolerance': 0,
-            'stopSingle'    : false,
-            'stopDouble'    : false
-        },
-        initialize: function(options) {
-            this.handlerOptions = OpenLayers.Util.extend(
-                {},
-                this.defaultHandlerOptions
-            );
-            OpenLayers.Control.prototype.initialize.apply(
-                this,
-                arguments
-            ); 
-            this.handler = new OpenLayers.Handler.Click(
-                this, 
-                { 'click': this.trigger },
-                this.handlerOptions
-            );
-        }, 
-        trigger: function(e) {
-            numClicks++;
-            var lonlat  = map.getLonLatFromViewPortPx(e.xy);
-            var glonlat = lonlat.transform(
-                mercator,
-                geographic
-            );
-            var geoLoc = getLocationData(glonlat.lon, glonlat.lat);
-            //alert("Klikn¹³eœ "+glonlat+" a w G: "/*+geoLoc.results[0].formatted_address*/);
-        }
-    }
-);
-function getLocationData(glon, glat) {            
-    geocoder    = new google.maps.Geocoder();
-    latlng      = new google.maps.LatLng(glat, glon, true);
-    geocoder.geocode(
-        {'latLng': latlng},
-        function(results, status) {
-            if (status == google.maps.GeocoderStatus.OK) {
-                addMarker(
-                    markers,
-                    new OpenLayers.LonLat(glon, glat).transform(
-                        geographic,
-                        mercator
-                    ),
-                    "Punkt "
-                        +numClicks
-                        +":\n"+results[0].formatted_address
-                );
-                
-                if (numClicks==1) {
-                    /* Marker startowy */
-                    markers.clearMarkers();
-                    map.getLayersByName("Routes")[0].removeAllFeatures();
-                    fromAddress = results[0].formatted_address;
-                    addMarker(
-                        markers,
-                        new OpenLayers.LonLat(glon, glat).transform(
-                            geographic,
-                            mercator
-                        ),
-                        "Marker startowy: " + results[0].formatted_address
-                    );
-                } else if (numClicks==2) {
-                    /* Marker koñcowy */
-                    numClicks=0;
-                    toAddress = results[0].formatted_address;
-                    addMarker(
-                        markers,
-                        new OpenLayers.LonLat(glon, glat).transform(
-                            geographic,
-                            mercator
-                        ),
-                        "Marker koncowy: " + results[0].formatted_address
-                    );
-                    var request = {
-                        origin: fromAddress,
-                        destination: toAddress,
-                        travelMode: google.maps.TravelMode.DRIVING
-                    };
-                    directionsService.route(request, function(res, status) {
-                        if(status == google.maps.DirectionsStatus.OK){
-                            getRoutePolyline(res);
-                        }
-                    });
-                } else {
-                    numClicks=0;
-                }
-                
+               vectorSource.addFeature( routeFeature );
+
+               //alert("Found route!");
+               //pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong, data.coordinates);
+               //$scope.route3d = altServ.get3dRoute();
             }
-            else  {
-                alert('Geocode failure because of ' + status);
+            else {
+               alert('Error!');
             }
-        }
-    );
-}
-function getRoutePolyline(result) {
-    var pointList = [];
-    var vectorLayer = map.getLayersByName("Routes")[0];
-    vectorLayer.removeAllFeatures();
-    /* Konstrukcja polilinii */
-    var stepy = result.routes[0].legs[0].steps;
-    for(var i=0; i < stepy.length; i++)
-    {
-        var endpoint = stepy[i].end_point;
-        var point = new OpenLayers.Geometry.Point(
-            endpoint.lng(),
-            endpoint.lat()).transform(
-                geographic,
-                mercator
-            );
-        //console.log(point);
-        pointList.push(point);
-    }
-   
-    lineFeature = new OpenLayers.Feature.Vector(
-        new OpenLayers.Geometry.LineString(pointList),
-        null,
-        line_style
-    );
-    vectorLayer.addFeatures(lineFeature);
+         });*/
+      }
+
+      if(markersCount == 3)
+      {
+         vectorSource.clear();
+         markersCount = 0;
+      }
+   });
 }

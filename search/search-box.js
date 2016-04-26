@@ -12,7 +12,9 @@
       controller: function(){
         var ctrl = this;
 
-        ctrl.searchData = routeService.searchData
+        searchBoxCtrl = ctrl;
+        
+        ctrl.searchData = routeService.searchData;
 
         ctrl.searchData.from = {};
         ctrl.searchData.to = {};
@@ -21,9 +23,9 @@
 
         ctrl.search = function(){
           var urlFrom = 'http://maps.google.com/maps/api/geocode/json?address=' +
-                    ctrl.from + '%2CGda%C5%84sk&sensor=false';
+                    ctrl.from + '&sensor=false';
           var urlTo = 'http://maps.google.com/maps/api/geocode/json?address=' +
-                    ctrl.to + '%2CGda%C5%84sk&sensor=false';
+                    ctrl.to + '&sensor=false';
 
           $http.get(urlFrom).success(function(data){
             ctrl.searchData.from = data.results[0].geometry.location;
