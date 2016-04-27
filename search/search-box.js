@@ -13,7 +13,7 @@
         var ctrl = this;
 
         searchBoxCtrl = ctrl;
-        
+
         ctrl.searchData = routeService.searchData;
 
         ctrl.searchData.from = {};
@@ -22,15 +22,16 @@
         ctrl.searchData.level = 'medium';
 
         ctrl.search = function(){
-          var urlFrom = 'http://maps.google.com/maps/api/geocode/json?address=' +
-                    ctrl.from + '&sensor=false';
-          var urlTo = 'http://maps.google.com/maps/api/geocode/json?address=' +
-                    ctrl.to + '&sensor=false';
+          var addressUrl = 'http://open.mapquestapi.com/nominatim/v1/search.php?key=hGTQxTXPQN8KAXHuS70ehDrzT18Qf0XO&format=json&q=';
+          var urlFrom = addressUrl + ctrl.from + '&sensor=false';
+          var urlTo = addressUrl + ctrl.to + '&sensor=false';
 
           $http.get(urlFrom).success(function(data){
-            ctrl.searchData.from = data.results[0].geometry.location;
+            ctrl.searchData.from.lat = data[0].lat;
+            ctrl.searchData.from.lng = data[0].lon;
             $http.get(urlTo).success(function(data){
-              ctrl.searchData.to = data.results[0].geometry.location;
+              ctrl.searchData.to.lat = data[0].lat;
+              ctrl.searchData.to.lng = data[0].lon;
               console.log('Searching route with data:');
               console.log(ctrl.searchData);
               routeService.findRoute();

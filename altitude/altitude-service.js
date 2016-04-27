@@ -1,5 +1,5 @@
 angular.module('altitude', [])
-.factory('altitudeService', [function(){
+.factory('altitudeService', ['$http', function($http){
 
 
   var coords = [];
@@ -18,26 +18,26 @@ angular.module('altitude', [])
     })
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'data/gdansk_puwg92.db', true);
-  xhr.responseType = 'arraybuffer';
-
-  xhr.onload = function(e) {
-    var uInt8Array = new Uint8Array(this.response);
-    var db = new SQL.Database(uInt8Array);
-    var contents = db.exec("SELECT * FROM coords");
-    var dbValues = contents[0].values;
-    console.log(dbValues);
-    for (var i in dbValues){
-      var singleDbValue = dbValues[i];
-      coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
-    }
-  console.log('DB is ready with ' + coords.length + ' elements.');
-
-  document.getElementById("loader").remove();
-  
-  };
-  xhr.send();
+  // var xhr = new XMLHttpRequest();
+  // xhr.open('GET', 'data/gdansk_puwg92.db', true);
+  // xhr.responseType = 'arraybuffer';
+  //
+  // xhr.onload = function(e) {
+  //   var uInt8Array = new Uint8Array(this.response);
+  //   var db = new SQL.Database(uInt8Array);
+  //   var contents = db.exec("SELECT * FROM coords");
+  //   var dbValues = contents[0].values;
+  //   console.log(dbValues);
+  //   for (var i in dbValues){
+  //     var singleDbValue = dbValues[i];
+  //     coords.push({x: singleDbValue[1], y: singleDbValue[2], z: singleDbValue[3]});
+  //   }
+  // console.log('DB is ready with ' + coords.length + ' elements.');
+  //
+  // document.getElementById("loader").remove();
+  //
+  // };
+  // xhr.send();
 
   function wsg84ToPuw92(lat, long){
     var puw92x, puw92y;
@@ -162,23 +162,40 @@ angular.module('altitude', [])
   //   return route3d;
   // }
 
+
   var createProfile = function(route2dWsg84){
     profile = [];
-    formatRoute2d(route2dWsg84);
 
-    var distance = 0;
-    var altitude = findClosestPointAltitude(route2d[0].x, route2d[0].y);
-    profile.push([distance, altitude]);
+    var elevationUrl = 'https://open.mapquestapi.com/elevation/v1/profile?key=hGTQxTXPQN8KAXHuS70ehDrzT18Qf0XO&shapeFormat=raw&latLngCollection=';
+    angular.forEach(route2dWsg84, function(position){
+      elevationUrl += position.lat + ',' + position.long + ',';
+    });
 
-    for (var i = 1; i < route2d.length; i++){
-      distance += calculateDistance(route2d[i].x, route2d[i-1].x,
-                                    route2d[i].y, route2d[i-1].y);
-      var altitude = findClosestPointAltitude(route2d[i].x, route2d[i].y);
-      profile.push([distance, altitude]);
-    }
-    console.log('Got profile');
-    console.log(profile);
-    notifyObservers();
+    $http.get(elevationUrl).success(function(data){
+      angular.forEach(data.elevationProfile, function(point){
+        profile.push([point.distance, point.height]);
+      });
+      notifyObservers();
+    });
+
+
+    //
+    // profile = [];
+    // formatRoute2d(route2dWsg84);
+    //
+    // var distance = 0;
+    // var altitude = findClosestPointAltitude(route2d[0].x, route2d[0].y);
+    // profile.push([distance, altitude]);
+    //
+    // for (var i = 1; i < route2d.length; i++){
+    //   distance += calculateDistance(route2d[i].x, route2d[i-1].x,
+    //                                 route2d[i].y, route2d[i-1].y);
+    //   var altitude = findClosestPointAltitude(route2d[i].x, route2d[i].y);
+    //   profile.push([distance, altitude]);
+    // }
+    // console.log('Got profile');
+    // console.log(profile);
+    // notifyObservers();
   }
 
   var getProfile = function(){
