@@ -27,23 +27,7 @@
     var findRoute = function(){
       var url = "http://cx453.net/tmc/api.php?a=" + searchData.from.lat + "&b=" + searchData.from.lng + "&c=" + searchData.to.lat + "&d=" + searchData.to.lng + "&e=1&f=1";
 
-      //A very nasty implementation of adding markers here
-      var startMarker = new ol.Feature({
-         type: 'geoMarker',
-         geometry: new ol.geom.Point(ol.proj.transform([searchData.from.lng, searchData.from.lat], 'EPSG:4326', 'EPSG:3857'))
-         //geometry: new ol.geom.Point(e.coordinate)
-      });
-      var endMarker = new ol.Feature({
-         type: 'geoMarker',
-         geometry: new ol.geom.Point(ol.proj.transform([searchData.to.lng, searchData.to.lat], 'EPSG:4326', 'EPSG:3857'))
-         //geometry: new ol.geom.Point(e.coordinate)
-      });
-
-      vectorSource.clear();
-      
-      vectorSource.addFeature( startMarker );
-      vectorSource.addFeature( endMarker );
-      
+     
       $http({method: 'GET', url: url}).success(function(data, status, headers, config) {
         /****************************************************************************************
         *  data                                                                                *
@@ -56,6 +40,9 @@
         *   |--- coordinates - array of coords - contains two item arrays of coords [lat, lon] *
         ****************************************************************************************/
 
+		//A very nasty implementation of adding markers here
+		vectorSource.clear();
+	
         if(data.properties.traveltime != -1){
           //pathServ.update2dRoute($scope.startLat, $scope.startLong, $scope.stopLat, $scope.stopLong, data.coordinates);
           //$scope.route3d = altServ.calculate3dRoute();
@@ -71,6 +58,20 @@
           });
 
           vectorSource.addFeature( routeFeature );
+		  
+		var startMarker = new ol.Feature({
+           type: 'geoMarker',
+           geometry: new ol.geom.Point(ol.proj.transform([data.coordinates[0][0], data.coordinates[0][1]], 'EPSG:4326', 'EPSG:3857'))
+           //geometry: new ol.geom.Point(e.coordinate)
+        });
+        var endMarker = new ol.Feature({
+           type: 'geoMarker',
+           geometry: new ol.geom.Point(ol.proj.transform([data.coordinates[data.coordinates.length - 1][0], data.coordinates[data.coordinates.length - 1][1]], 'EPSG:4326', 'EPSG:3857'))
+           //geometry: new ol.geom.Point(e.coordinate)
+        });
+		  
+		vectorSource.addFeature( startMarker );
+		vectorSource.addFeature( endMarker );
         }
         else {
           alert('Error!');

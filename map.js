@@ -75,11 +75,7 @@ function mapInit() {
          vectorLayer
       ],
       target: 'map',
-      controls: ol.control.defaults({
-         attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-            collapsible: false
-         })
-      }),
+      controls: [],
       view: new ol.View({
          center: ol.proj.transform([18.6174352, 54.4366541], 'EPSG:4326', 'EPSG:3857'),
          zoom: 12
